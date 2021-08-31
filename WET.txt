@@ -1,0 +1,991 @@
+// Wetland Extent Tool (W.E.T)
+// This tool allows statewide mapping of wetland areas within the state of Minnesota.
+// It utilizes Landsat 8 surface reflectance, Sentinel-1 C-SAR, and topographic data 
+// derived from a 3 meter resolution DEM. 
+
+// Updated 8/31/21 by Erica Carcelen to correct deprecated random forest classifier function
+
+// Ancillary datasets 
+var open_water = /* color: #98ff00 */ee.FeatureCollection(
+        [ee.Feature(
+            ee.Geometry.Point([-92.63007426029014, 46.70307450330163]),
+            {
+              "Primary": 1,
+              "system:index": "0"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.65779757266807, 46.69977819174779]),
+            {
+              "Primary": 1,
+              "system:index": "1"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.65535773695223, 46.79086804517562]),
+            {
+              "Primary": 1,
+              "system:index": "2"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.52489509046785, 46.78757709779845]),
+            {
+              "Primary": 1,
+              "system:index": "3"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.57948340833894, 46.797449336287634]),
+            {
+              "Primary": 1,
+              "system:index": "4"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.59287299574129, 46.79909453330788]),
+            {
+              "Primary": 1,
+              "system:index": "5"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.48923946562718, 46.76949225349465]),
+            {
+              "Primary": 1,
+              "system:index": "6"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.4928443545432, 46.760261675086376]),
+            {
+              "Primary": 1,
+              "system:index": "7"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.48460460844944, 46.74467781151106]),
+            {
+              "Primary": 1,
+              "system:index": "8"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.47902561369847, 46.736678305353585]),
+            {
+              "Primary": 1,
+              "system:index": "9"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.52485920134495, 46.813683029978584]),
+            {
+              "Primary": 1,
+              "system:index": "10"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.49636341277073, 46.81885191964994]),
+            {
+              "Primary": 1,
+              "system:index": "11"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.4613444918723, 46.79323755336531]),
+            {
+              "Primary": 1,
+              "system:index": "12"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.46546436491917, 46.78242416101643]),
+            {
+              "Primary": 1,
+              "system:index": "13"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.61034656706761, 46.735854759400084]),
+            {
+              "Primary": 1,
+              "system:index": "14"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.54477192107151, 46.76126124082643]),
+            {
+              "Primary": 1,
+              "system:index": "15"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.47713733855198, 46.73467824336283]),
+            {
+              "Primary": 1,
+              "system:index": "16"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.48125721159886, 46.77466538917342]),
+            {
+              "Primary": 1,
+              "system:index": "17"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.5437419528098, 46.81908685737516]),
+            {
+              "Primary": 1,
+              "system:index": "18"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.90245521473304, 46.79029810426489]),
+            {
+              "Primary": 1,
+              "system:index": "19"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.1807907860221, 46.89456488140541]),
+            {
+              "Primary": 1,
+              "system:index": "20"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.40463722156898, 46.87391547256243]),
+            {
+              "Primary": 1,
+              "system:index": "21"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.2741745750846, 46.94427854683399]),
+            {
+              "Primary": 1,
+              "system:index": "22"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-93.28011024402991, 46.7719600694163]),
+            {
+              "Primary": 1,
+              "system:index": "23"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-93.63991249012366, 46.24931110565836]),
+            {
+              "Primary": 1,
+              "system:index": "24"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.24278724598304, 46.437968032861306]),
+            {
+              "Primary": 1,
+              "system:index": "25"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.34166419910804, 46.45973063446729]),
+            {
+              "Primary": 1,
+              "system:index": "26"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.17824256824866, 46.58068541093643]),
+            {
+              "Primary": 1,
+              "system:index": "27"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.25102699207679, 46.69101011218956]),
+            {
+              "Primary": 1,
+              "system:index": "28"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.22425847072265, 47.444927448015086]),
+            {
+              "Primary": 1,
+              "system:index": "29"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.37806706447265, 47.135676881848674]),
+            {
+              "Primary": 1,
+              "system:index": "30"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.03175358791015, 47.96246030666262]),
+            {
+              "Primary": 1,
+              "system:index": "31"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.77906804103515, 48.11305124444586]),
+            {
+              "Primary": 1,
+              "system:index": "32"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.66085151133552, 46.39513670683431]),
+            {
+              "Primary": 1,
+              "system:index": "33"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.52970221934333, 46.488349541066924]),
+            {
+              "Primary": 1,
+              "system:index": "34"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.75217536387458, 46.472273433351916]),
+            {
+              "Primary": 1,
+              "system:index": "35"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.8023004859449, 46.458084687767595]),
+            {
+              "Primary": 1,
+              "system:index": "36"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.68213752207771, 46.28942921838861]),
+            {
+              "Primary": 1,
+              "system:index": "37"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.97121528086677, 46.578099180041676]),
+            {
+              "Primary": 1,
+              "system:index": "38"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.48507026133552, 46.5950876618037]),
+            {
+              "Primary": 1,
+              "system:index": "39"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.11823404589444, 45.89743249637326]),
+            {
+              "Primary": 1,
+              "system:index": "40"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.36611307421475, 46.042514196713846]),
+            {
+              "Primary": 1,
+              "system:index": "41"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.7478879765585, 46.09110778423922]),
+            {
+              "Primary": 1,
+              "system:index": "42"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.4440412126902, 45.61422700538568]),
+            {
+              "Primary": 1,
+              "system:index": "43"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.31540520937733, 47.85532872581222]),
+            {
+              "Primary": 1,
+              "system:index": "44"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.46440728457264, 47.879742328584854]),
+            {
+              "Primary": 1,
+              "system:index": "45"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.26322015078358, 47.86776728115119]),
+            {
+              "Primary": 1,
+              "system:index": "46"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.30991204531483, 47.81223140529393]),
+            {
+              "Primary": 1,
+              "system:index": "47"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-91.99714501650624, 47.771405778161956]),
+            {
+              "Primary": 1,
+              "system:index": "48"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.61272271426014, 47.931295513763246]),
+            {
+              "Primary": 1,
+              "system:index": "49"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-93.1270201996117, 48.116370255858456]),
+            {
+              "Primary": 1,
+              "system:index": "50"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-92.89150079043202, 48.068672644047695]),
+            {
+              "Primary": 1,
+              "system:index": "51"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-93.38447496029664, 47.83262535634985]),
+            {
+              "Primary": 1,
+              "system:index": "52"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.53056210761201, 47.429341593667544]),
+            {
+              "Primary": 1,
+              "system:index": "53"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.57313412909639, 47.352640816824874]),
+            {
+              "Primary": 1,
+              "system:index": "54"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.62119931464326, 47.51149652480349]),
+            {
+              "Primary": 1,
+              "system:index": "55"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.85053891425264, 47.50917752661004]),
+            {
+              "Primary": 1,
+              "system:index": "56"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.20783871894014, 47.40146331738021]),
+            {
+              "Primary": 1,
+              "system:index": "57"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-93.90777463202608, 47.54024358972455]),
+            {
+              "Primary": 1,
+              "system:index": "58"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.16801327948701, 47.466025481727094]),
+            {
+              "Primary": 1,
+              "system:index": "59"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.16595334296358, 47.6180596874617]),
+            {
+              "Primary": 1,
+              "system:index": "60"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.35340756659639, 47.20987403920405]),
+            {
+              "Primary": 1,
+              "system:index": "61"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.47700375800264, 47.17067789304703]),
+            {
+              "Primary": 1,
+              "system:index": "62"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.57588071112764, 46.96676608714943]),
+            {
+              "Primary": 1,
+              "system:index": "63"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.28474301581514, 46.94333184024794]),
+            {
+              "Primary": 1,
+              "system:index": "64"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.4472338605417, 46.946613252602674]),
+            {
+              "Primary": 1,
+              "system:index": "65"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.61340207343233, 46.89174037231959]),
+            {
+              "Primary": 1,
+              "system:index": "66"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.82488888983858, 46.78605763779515]),
+            {
+              "Primary": 1,
+              "system:index": "67"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.65460080390108, 46.97379436012095]),
+            {
+              "Primary": 1,
+              "system:index": "68"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.70060605292451, 47.07302852501476]),
+            {
+              "Primary": 1,
+              "system:index": "69"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.5351244855417, 47.07957523204522]),
+            {
+              "Primary": 1,
+              "system:index": "70"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.06751889472139, 46.95598760813894]),
+            {
+              "Primary": 1,
+              "system:index": "71"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.05653256659639, 47.00283475733598]),
+            {
+              "Primary": 1,
+              "system:index": "72"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.96040219550264, 47.00377128165494]),
+            {
+              "Primary": 1,
+              "system:index": "73"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.81184262519014, 46.525629565724394]),
+            {
+              "Primary": 1,
+              "system:index": "74"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.76927060370576, 46.57851626313827]),
+            {
+              "Primary": 1,
+              "system:index": "75"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.70266598944795, 46.610600901119014]),
+            {
+              "Primary": 1,
+              "system:index": "76"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.55503720526826, 46.63465191394638]),
+            {
+              "Primary": 1,
+              "system:index": "77"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.64430112128389, 46.53035368760196]),
+            {
+              "Primary": 1,
+              "system:index": "78"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-96.04873532538545, 46.701561192050555]),
+            {
+              "Primary": 1,
+              "system:index": "79"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.89698666815889, 46.74298453119325]),
+            {
+              "Primary": 1,
+              "system:index": "80"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-96.00410336737764, 46.61484597388963]),
+            {
+              "Primary": 1,
+              "system:index": "81"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.62644833808076, 46.3048702739406]),
+            {
+              "Primary": 1,
+              "system:index": "82"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.82763547186983, 46.207067143816445]),
+            {
+              "Primary": 1,
+              "system:index": "83"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.69236630683076, 46.17141589183425]),
+            {
+              "Primary": 1,
+              "system:index": "84"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-96.05216855292451, 46.41196821178755]),
+            {
+              "Primary": 1,
+              "system:index": "85"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.97212074966023, 46.12860386504897]),
+            {
+              "Primary": 1,
+              "system:index": "86"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.41113136977742, 45.99703875367389]),
+            {
+              "Primary": 1,
+              "system:index": "87"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.36443947524617, 45.96125147032915]),
+            {
+              "Primary": 1,
+              "system:index": "88"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.47704933852742, 45.826005804669805]),
+            {
+              "Primary": 1,
+              "system:index": "89"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.4152512428243, 45.73789552999634]),
+            {
+              "Primary": 1,
+              "system:index": "90"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-93.54680256503076, 44.94442590004501]),
+            {
+              "Primary": 1,
+              "system:index": "91"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.11019520419092, 45.297386865316945]),
+            {
+              "Primary": 1,
+              "system:index": "92"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.03981403964013, 45.317428032945934]),
+            {
+              "Primary": 1,
+              "system:index": "93"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.06487660067529, 45.27468108274404]),
+            {
+              "Primary": 1,
+              "system:index": "94"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.90857852277952, 45.25352488036253]),
+            {
+              "Primary": 1,
+              "system:index": "95"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.84197390852171, 45.18121380953587]),
+            {
+              "Primary": 1,
+              "system:index": "96"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.70636142072874, 45.33419172638158]),
+            {
+              "Primary": 1,
+              "system:index": "97"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.04419101057249, 45.30908620761909]),
+            {
+              "Primary": 1,
+              "system:index": "98"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.10564578352171, 45.30981056110116]),
+            {
+              "Primary": 1,
+              "system:index": "99"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.06067050275999, 45.25352488036253]),
+            {
+              "Primary": 1,
+              "system:index": "100"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-94.96968997297483, 45.2590834615923]),
+            {
+              "Primary": 1,
+              "system:index": "101"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.03251803693968, 45.20540834858686]),
+            {
+              "Primary": 1,
+              "system:index": "102"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.00024569807249, 45.18411769731836]),
+            {
+              "Primary": 1,
+              "system:index": "103"
+            }),
+        ee.Feature(
+            ee.Geometry.Point([-95.10324252424437, 45.17661568429276]),
+            {
+              "Primary": 1,
+              "system:index": "104"
+            })]),
+    urban_mask = ee.Image("users/alin14/gr8lakes/mn_urban_mask"),
+    field_val = ee.FeatureCollection("users/alin14/gr8lakes/mndnr_field_val_reclass"),
+    twi = ee.Image("users/ericaoconnor7/twi_norm30m"),
+    mn_nwi = ee.Image("users/christophernotto475/MN_NWI_raster");
+
+//////////////////////////////////////////////////////////////////////////////////
+// Constants /////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+// Define dates ranges to filter datasets.
+var y2017 = ee.Filter.date('2017-05-21', '2017-09-26');
+var y2018 = ee.Filter.date('2018-05-21', '2018-09-26');
+
+
+          var date = y2018; // CHANGE DATE HERE
+
+
+// Define area of interest.
+
+  // Test site at Fond Du Lac Reservation, chosen due to high density of field validation points
+  var fdl = /* color: #d63000 */ee.Geometry.Polygon(
+          [[[-92.65475953207789, 46.660941233153416],
+            [-92.41566988243466, 46.66140739294744],
+            [-92.41705841660166, 46.830411515739016],
+            [-92.65889731527363, 46.83181787820404]]]);
+  
+  // Statewide geometry for Minnesota        
+  var mn = ee.FeatureCollection("users/alin14/gr8lakes/mn_boundary")
+
+
+          var aoi = fdl // CHANGE AREA OF INTEREST HERE
+          Map.centerObject(aoi)
+
+
+// Define bands and indices to include in final stack. Dictionary needs to be defined because
+// some functions result in the renaming of bands/indices. If you are adding more bands than
+// what is already listed, follow the naming convention below and keep the order the same.
+var post_snic_names = ['clusters', 'NDVI_mean', 'MNDWI_mean', 'VV/VH_mean', 'VV_mean','VH_mean',
+    'b1_mean','TCWGD_mean','B4_mean','B3_mean','B2_mean']
+var pre_snic_names =   ['clusters', 'NDVI', 'MNDWI', 'VV/VH', 'VV','VH',
+    'TWI','TCWGD','B4','B3','B2']
+var dictionary = ee.Dictionary.fromLists(pre_snic_names, post_snic_names)
+
+// CHANGE BANDS HERE. Possible bands/indices include: 
+//    Landsat 8: TCWGD, NDVI, MNDWI, B4 (red), B3 (green), B2 (blue)
+//    Sentinel 1: VV, VH, VV/VH
+//    Ancillary: TWI
+
+            var l8_bands = ee.List(['TCWGD','MNDWI'])
+            var s1_bands = ee.List(['VV','VH'])
+            var ancillary = ee.List(['TWI'])
+
+var bands = l8_bands.cat(s1_bands).cat(ancillary) // This variable is a list of all bands
+var snic_bands = dictionary.values(bands) // Allows for bands to always be defined, even with name change
+
+print('Bands and Indices Used in Classification:', bands)
+
+
+///////////////////////////////////////////////////////////////////////////////////
+// Sentinel 1 /////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
+// Functions ----------------------------------------------------------------------
+
+// Create function to convert to natural values.
+function toNatural(image) {
+  return ee.Image(10.0).pow(image.divide(10.0));
+}
+
+// Create functions to remove dark borders, threshold value depends on VV or VH.
+// Thresholds were chosen based on trial an error and are different depending on bands.
+// Spot check if area of interest changes significantly.
+
+function removeBordersVV(image) {
+  var vv = image.select('VV');
+  var vv_edge = vv.lt(0.005); // Can change this threshold if needed
+  var vv_maskedImage = vv.mask().and(vv_edge.not());
+  return image.addBands(vv.updateMask(vv_maskedImage),['VV'],true);
+}
+function removeBordersVH(image) {
+  var vh = image.select('VH');
+  var vh_edge = vh.lt(0.0008); // Can change this threshold if needed
+  var vh_maskedImage = vh.mask().and(vh_edge.not());
+  return image.addBands(vh.updateMask(vh_maskedImage),['VH'],true);
+}
+
+// Function to add VV/VH band to each image in the collection.
+function bandRatio(image){
+  var vv = image.select('VV');
+  var vh = image.select('VH');
+  var ratio = vv.divide(vh).rename('VV/VH');
+  return image.addBands(ratio);
+}
+
+// Data collection ----------------------------------------------------------------
+
+// Filter, convert, and mask Sentinel-1 image collection.
+var s1 = ee.ImageCollection('COPERNICUS/S1_GRD')
+  .filter(ee.Filter.eq('instrumentMode', 'IW'))
+  .filterBounds(aoi)
+  .filter(date)
+  .select('VV','VH');
+
+// Create and print list of images in collection to the console.
+print('Sentinel-1 C-SAR Images Used:', s1);
+
+// Data processing ----------------------------------------------------------------
+
+// Convert from dB to natural numbers, add VV/VH ratio as a band, remove borders
+// (note that this may remove open water pixels).
+
+var s1_processed = s1
+  .map(toNatural)
+  .map(removeBordersVV)
+  .map(removeBordersVH)
+  .map(bandRatio)
+
+// Reduce VV/VH collection to mean values.
+var s1_composite = s1_processed
+  .reduce(ee.Reducer.mean())
+  .select(['VV/VH_mean','VV_mean','VH_mean'],['VV/VH','VV','VH']);
+
+Map.addLayer(s1_composite.clip(aoi), {
+  bands: 'VV/VH',
+  min: 1, 
+  max: 31, 
+  gamma: 2}, 
+  'Sentinel 1 VV/VH Mean Composite', 
+  false);
+
+///////////////////////////////////////////////////////////////////////////////////
+// Landsat 8 //////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+
+// Functions ----------------------------------------------------------------------
+
+// Mask clouds using bits 3 and 5 of the pixel_qa band 
+var cloudMask = function(image){
+  var cloudShadowBitMask = 1 << 3;
+  var cloudsBitMask = 1 << 5;
+  var qa = image.select('pixel_qa');
+  var qa_mask = qa.bitwiseAnd(cloudShadowBitMask).eq(0)
+      .and(qa.bitwiseAnd(cloudsBitMask).eq(0));
+  return image.updateMask(qa_mask);
+};
+
+// Function to add NDVI band to each image in the collection.
+var addNDVI = function(image){
+  var NDVI = image.normalizedDifference(['B5', 'B4']).rename('NDVI');
+  return image.addBands(NDVI);
+};
+
+// Function to add MNDWI band to each image in the collection.
+var addMNDWI = function(image){
+  var MNDWI = image.normalizedDifference(['B3', 'B6']).rename('MNDWI');
+  return image.addBands(MNDWI);
+};
+
+// Function to add Tasseled Cap Wetness Greenness Difference to each image in collection
+var addTCWGD = function(image){
+  var TCW = image.expression(
+    '(0.1511*BLUE)+(0.1973*GREEN)+(0.3283*RED)+(0.3407*NIR)+(-0.7117*SWIR1)+(-0.4559*SWIR2)',{
+      'BLUE': image.select('B2'),
+      'GREEN': image.select('B3'),
+      'RED': image.select('B4'),
+      'NIR': image.select('B5'),
+      'SWIR1': image.select('B6'),
+      'SWIR2': image.select('B7')
+    })
+
+  var TCG = image.expression(
+      '(-0.2941*BLUE)+(-0.243*GREEN)+(-0.5424*RED)+(0.7276*NIR)+(0.0713*SWIR1)+(-0.1608*SWIR2)',{
+        'BLUE': image.select('B2'),
+        'GREEN': image.select('B3'),
+        'RED': image.select('B4'),
+        'NIR': image.select('B5'),
+        'SWIR1': image.select('B6'),
+        'SWIR2': image.select('B7')
+      })
+  var TCWGD = TCW.subtract(TCG).rename('TCWGD');
+  return image.addBands(TCWGD);
+};
+
+
+// Data collection ---------------------------------------------------------------
+
+var l8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
+  .filter(date)
+  .filterBounds(aoi);
+
+print('Landsat 8 OLI Images Used:', l8);
+
+// Data processing ---------------------------------------------------------------
+
+// Apply Cloud Mask
+var l8_masked = l8.map(cloudMask);
+
+// Map the NDVI, MNDWI and TCWGD indices.
+var l8_indices = l8_masked
+  .map(addNDVI)
+  .map(addMNDWI)
+  .map(addTCWGD);
+
+// Make a composite of the mean. Select only the bands you need at this point to
+// reduce computing time when this goes into SNIC.
+var l8_composite = l8_indices.mean().select(l8_bands);
+
+
+Map.addLayer(l8_composite.clip(aoi),[],'Landsat 8 Mean Composite', false)
+
+//////////////////////////////////////////////////////////////////////////////////
+// Assembling image stack ////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+// This section below, is a image stack made without changing resolutions. It works fine
+// when displaying data accross the whole state.
+var stack = l8_composite
+  .addBands(s1_composite)
+  .addBands(twi)
+  .clip(aoi);
+
+//////////////////////////////////////////////////////////////////////////////////
+// Object Based Image Analysis ///////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+//Image segmentation using Simple Non-Iterative Clustering (SNIC).
+var seeds = ee.Algorithms.Image.Segmentation.seedGrid(10);
+
+// Run SNIC on image stack. The parameters below are adjustable.
+var SNIC = ee.Algorithms.Image.Segmentation.SNIC({
+  image: stack.clip(aoi), 
+  compactness: 0.01, // values closer to one produces "squarer" clusters
+  connectivity: 8,
+  neighborhoodSize: 250,
+  seeds: seeds
+})
+
+//Reproject SNIC layer so that it doesn't change with different zoom levels
+var l8_projection = ee.Image('LANDSAT/LC08/C01/T1_SR/LC08_025027_20170524').projection()
+var SNIC_fixed = SNIC.select(snic_bands,bands).reproject(l8_projection,null,30)
+
+
+// Outlines of clusters for evaluation
+var minMax = SNIC_fixed.reduceNeighborhood(ee.Reducer.minMax(), ee.Kernel.square(1));
+var perimeterPixels = minMax.select(0).neq(minMax.select(1)).rename('perimeter');
+var perimeter = perimeterPixels.addBands(SNIC)
+    .reduceConnectedComponents(ee.Reducer.sum(), 'clusters', 256);
+var perimeter_outlines = perimeterPixels.remap([1],[1]);
+Map.addLayer(perimeter_outlines, [], 'Cluster outlines', false);
+
+//////////////////////////////////////////////////////////////////////////////////
+// Random Forest Classification //////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+// Merge all validation points and filter by bounds of the study site. In this section,
+// we combined extra open water points to existing field validation points.
+var points = field_val.merge(open_water).filterBounds(aoi);
+
+// Generate imaget stack excluding the clusters layer.
+var stack = SNIC_fixed.select(bands).float();
+
+// Generate training data with field points by sampling image stack.
+var training = stack.sampleRegions({
+  collection: points,
+  properties: ['Primary'], // 'Primary' is our broadest classification where 0 = upland, 1 = open water, 2 = wetland
+  scale:30
+});
+
+// Train a random forest classifier against training data.
+var trained = ee.Classifier.smileRandomForest(100).train(training, 'Primary');
+
+// Classify the image with the same bands used for training.
+var classified = stack.classify(trained).clip(aoi);
+
+// Mask out urban areas in image and reclassify values. Reclassification is preferred as 
+// the "0" (upland) class can be confused as "no data" in GIS software. Final classification
+// scheme in exported map is 1 = upland, 2 = open water, 3 = wetland.
+var classified = classified.multiply(urban_mask).remap([0,1,2],[1,2,3],0)
+
+
+// Display the classification results.
+
+var nwi_viz = {
+  min: 1,
+  max: 9,
+  palette: ['#2768d1','#2768d1', //Lake, Freshwater Pond --> open water
+            '#52b700','#52b700','#52b700','#52b700', // Various Freshwater Wetland
+            '#2768d1', // Riverine --> open water
+            '#52b700','#52b700'] //Various Freshwater Wetland
+}
+
+var wetland_viz = {
+  min: 1,
+  max: 3,
+  palette: ['#ffffff', // upland
+            '#2768d1', // open water
+            '#52b700'] // wetland
+}
+Map.addLayer(classified, wetland_viz, 'Classified Clusters');
+
+// NWI layer was added for qualitative comparison.
+Map.addLayer(mn_nwi.clip(aoi), nwi_viz, 'NWI Update', false);
+
+// Confusion matrix generated to compare 'Classified Clusters' layer against field points.
+var confusionMatrix = trained.confusionMatrix()
+print(confusionMatrix)
+print(confusionMatrix.accuracy())
+
+//////////////////////////////////////////////////////////////////////////////////
+// Manual Thresholding ///////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+// This section was included to show an exploratory process we undertook. We manually
+// identified thresholds for several indices that may help distinguish between classes.
+// This section does not impact thr random forest classification.
+
+var snic_vv = SNIC_fixed.select('VV')
+var snic_vh = SNIC_fixed.select('VH')
+var snic_vvvh = SNIC_fixed.select('VV/VH')
+var snic_tcwgd = SNIC_fixed.select('TCWGD')
+var snic_mndwi = SNIC_fixed.select('MNDWI')
+var snic_twi = SNIC_fixed.select('TWI')
+
+// Threshold rules for open water class
+var thresh_ow = snic_vv.lt(0.1).and(snic_vh.lt(0.02)).and(snic_mndwi.gt(-0.39))
+
+// Threshold rules for wetland class
+var thresh_wl = snic_twi.gt(0.2).and(snic_mndwi.lt(-0.4)).remap([1],[2],0)
+
+// Two images were added together to create a combined open water and wetland map.
+// This resulted in some pixel values where both classes overlapped. It was reclassified
+// to be open water.
+var thresh_map = thresh_wl.add(thresh_ow).remap([0,1,2,3],[1,2,3,2],0)
+
+// Threshold map was masked with urban mask and reclassfied to that 0 values became 1 (upland).
+var thresh_map_masked = thresh_map.multiply(urban_mask).remap([0,1,2,3],[1,1,2,3],0)
+
+Map.addLayer(thresh_map_masked.clip(aoi), wetland_viz, "Threshold Classification Map", false);
+
+
+//////////////////////////////////////////////////////////////////////////////////
+// Exporting /////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+// Classification can be exported to Google Drive.
+Export.image.toDrive({
+  image: classified,
+  description: "2018_fdl_rf",
+  scale: 30,
+  maxPixels:1e13,
+  region: aoi // This does not accept tables. So although the fdl geometry works, the statewide shapefile
+              // will not. You will have to use the polygon tool to draw a larger shape encompassing MN.
+})
